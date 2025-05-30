@@ -42,7 +42,7 @@ export default function MapView() {
     latitude: 40.730610,
     zoom: 10,
     bearing: 0,
-    pitch: 0
+    pitch: 45
   });
 
   const formatHour = (hour: number): string => {
@@ -217,7 +217,7 @@ export default function MapView() {
           mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
           style={{ width: '100%', height: '100%' }}
           onClick={handleZoneClick}
-          interactiveLayerIds={['zones']}
+          interactiveLayerIds={['zones', 'zones-extrusion']}
         >
           <NavigationControl />
           <Source type="geojson" data={zonesData}>
@@ -245,6 +245,51 @@ export default function MapView() {
                 ],
                 'fill-opacity': 0.7,
                 'fill-outline-color': '#000'
+              }}
+            />
+            <Layer
+              id="zones-extrusion"
+              type="fill-extrusion"
+              paint={{
+                'fill-extrusion-color': [
+                  'case',
+                  ['has', ['get', 'LocationID', ['properties']], ['literal', counts]],
+                  [
+                    'interpolate',
+                    ['linear'],
+                    ['to-number', ['get', ['get', 'LocationID', ['properties']], ['literal', counts]]],
+                    0, '#FFEDA0',
+                    100, '#FED976',
+                    500, '#FEB24C',
+                    1000, '#FD8D3C',
+                    2000, '#FC4E2A',
+                    5000, '#E31A1C',
+                    10000, '#BD0026',
+                    20000, '#800026'
+                  ],
+                  '#FFEDA0'
+                ],
+                'fill-extrusion-height': [
+                  'case',
+                  ['has', ['get', 'LocationID', ['properties']], ['literal', counts]],
+                  [
+                    'interpolate',
+                    ['linear'],
+                    ['to-number', ['get', ['get', 'LocationID', ['properties']], ['literal', counts]]],
+                    0, 0,
+                    100, 50,
+                    500, 100,
+                    1000, 200,
+                    2000, 300,
+                    5000, 400,
+                    10000, 500,
+                    20000, 600
+                  ],
+                  0
+                ],
+                'fill-extrusion-base': 0,
+                'fill-extrusion-opacity': 0.7,
+                'fill-extrusion-vertical-gradient': true
               }}
             />
           </Source>
@@ -354,6 +399,47 @@ export default function MapView() {
             <li>Peak hours analysis</li>
           </ul>
         </div>
+      </div>
+      <div style={{
+        position: 'absolute',
+        bottom: '20px',
+        right: '20px',
+        zIndex: 1000,
+        background: 'rgba(42, 42, 42, 0.95)',
+        color: '#e0e0e0',
+        padding: '12px',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <button
+          onClick={() => setViewState(prev => ({ ...prev, pitch: prev.pitch === 0 ? 45 : 0 }))}
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            color: '#fff',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.95em',
+            fontWeight: '500',
+            transition: 'all 0.2s ease',
+            minWidth: '120px'
+          }}
+          onMouseOver={e => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+          }}
+          onMouseOut={e => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+          }}
+        >
+          {viewState.pitch === 0 ? 'Show 3D View' : 'Show 2D View'}
+        </button>
       </div>
     </div>
   );
