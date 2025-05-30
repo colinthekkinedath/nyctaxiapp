@@ -301,7 +301,7 @@ export default function MapView() {
   }
 
   return (
-    <div style={{ position: 'relative', height: '100vh', display: 'flex' }}>
+    <div style={{ position: 'relative', height: '100vh', display: 'flex', background: '#1a1a1a' }}>
       <div style={{ flex: 1, position: 'relative' }}>
         {error && (
           <div style={{
@@ -310,10 +310,11 @@ export default function MapView() {
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 1000,
-            background: 'rgba(255, 0, 0, 0.1)',
+            background: 'rgba(255, 0, 0, 0.2)',
             padding: '10px',
             borderRadius: '5px',
-            border: '1px solid red'
+            border: '1px solid rgba(255, 0, 0, 0.3)',
+            color: '#ff6b6b'
           }}>
             {error}
           </div>
@@ -323,12 +324,13 @@ export default function MapView() {
           top: '10px',
           left: '10px',
           zIndex: 1000,
-          background: 'rgba(0,0,0,0.7)',
-          color: 'white',
-          padding: '4px 12px',
-          borderRadius: '6px',
-          fontWeight: 'bold',
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: '#fff',
+          padding: '8px 16px',
+          borderRadius: '8px',
+          fontWeight: '500',
           fontSize: '1.1em',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
         }}>
           Hour: {hour}:00
         </div>
@@ -343,11 +345,20 @@ export default function MapView() {
             top: '40px',
             left: '10px',
             zIndex: 1000,
-            width: '200px'
+            width: '200px',
+            WebkitAppearance: 'none',
+            background: 'rgba(255, 255, 255, 0.1)',
+            borderRadius: '4px',
+            height: '6px'
           }}
         />
         <MapContainer 
-          style={{ height: "100vh", width: "100%" }}
+          style={{ 
+            height: "100vh", 
+            width: "100%",
+            borderRadius: "12px",
+            overflow: "hidden"
+          }}
           scrollWheelZoom={true}
           maxBounds={[[40.4774, -74.2591], [40.9176, -73.7004]]} // NYC bounding box
         >
@@ -361,49 +372,52 @@ export default function MapView() {
       </div>
       <div style={{
         width: '300px',
-        background: 'rgba(255, 255, 255, 0.95)',
-        boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
+        background: '#2a2a2a',
+        boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.3)',
         padding: '20px',
         overflowY: 'auto',
         height: '100vh',
-        borderLeft: '1px solid rgba(0, 0, 0, 0.1)'
+        borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+        color: '#e0e0e0'
       }}>
         <h2 style={{ 
           margin: '0 0 20px 0',
           fontSize: '1.5em',
           fontWeight: '600',
-          color: '#333'
+          color: '#fff'
         }}>
           NYC Taxi Insights
         </h2>
         <div style={{ 
           padding: '15px',
-          background: '#f5f5f5',
+          background: 'rgba(255, 255, 255, 0.05)',
           borderRadius: '8px',
-          marginBottom: '15px'
+          marginBottom: '15px',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
-          <p style={{ margin: '0', color: '#666' }}>
+          <p style={{ margin: '0', color: '#b0b0b0' }}>
             Select a zone on the map to view detailed information about taxi activity in that area.
           </p>
         </div>
         {/* Placeholder for future features */}
         <div style={{ 
           padding: '15px',
-          background: '#f5f5f5',
+          background: 'rgba(255, 255, 255, 0.05)',
           borderRadius: '8px',
-          marginBottom: '15px'
+          marginBottom: '15px',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
         }}>
           <h3 style={{ 
             margin: '0 0 10px 0',
             fontSize: '1.1em',
-            color: '#444'
+            color: '#fff'
           }}>
             Coming Soon
           </h3>
           <ul style={{ 
             margin: '0',
             padding: '0 0 0 20px',
-            color: '#666'
+            color: '#b0b0b0'
           }}>
             <li>Zone comparison</li>
             <li>Historical trends</li>
