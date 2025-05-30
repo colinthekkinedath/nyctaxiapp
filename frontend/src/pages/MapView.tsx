@@ -86,39 +86,49 @@ function GeoJSONLayer({ data, style, counts }: { data: ZoneFeatureCollection; st
 
   // Add debug logging for zone clicks
   const handleZoneClick = useCallback((feature: ZoneFeature, layer: L.Layer) => {
+    const updatePopupContent = (currentCounts: Record<number, number>, currentTipInfo: Record<number, number | null>, currentFeature: ZoneFeature) => {
+      const locationId = Number(currentFeature.properties.LocationID);
+      const trips = currentCounts[locationId] || 0;
+      const avgTip = currentTipInfo[locationId];
+      
+      return `<b>Zone:</b> ${currentFeature.properties.zone}<br/>` +
+             `<b>Borough:</b> ${currentFeature.properties.borough}<br/>` +
+             `<b>Trips:</b> ${trips.toLocaleString()}<br/>` +
+             `<b>Average Tip:</b> ${avgTip !== undefined ? (avgTip !== null ? `$${avgTip.toFixed(2)}` : 'N/A') : 'Loading...'}`;
+    };
+
     layer.on('click', async () => {
       const locationId = Number(feature.properties.LocationID);
       console.log("Zone clicked:", {
         zone: feature.properties.zone,
         locationId,
         locationIdType: typeof locationId,
-        trips: counts[locationId],
-        allCounts: counts
+        trips: counts[locationId] || 0,
+        counts,
+        tipInfo
       });
-      const trips = counts[locationId] || 0;
-      let popupContent = `<b>Zone:</b> ${feature.properties.zone}<br/><b>Borough:</b> ${feature.properties.borough}<br/><b>Trips:</b> ${trips}<br/><b>Tip:</b> Loading tip info...`;
-      layer.bindPopup(popupContent).openPopup();
+
+      // Initial popup with current counts
+      layer.bindPopup(updatePopupContent(counts, tipInfo, feature)).openPopup();
 
       // Fetch tip info if not already fetched
       if (tipInfo[locationId] === undefined) {
         try {
           const tipData = await fetchTips(locationId);
-          // Assume tipData has an average property
           const avgTip = tipData?.average ?? null;
-          setTipInfo(prev => ({ ...prev, [locationId]: avgTip }));
-          popupContent = `<b>Zone:</b> ${feature.properties.zone}<br/><b>Borough:</b> ${feature.properties.borough}<br/><b>Trips:</b> ${trips}<br/><b>Average Tip:</b> ${avgTip !== null ? `$${avgTip.toFixed(2)}` : 'N/A'}`;
-          layer.setPopupContent(popupContent);
-        } catch {
-          popupContent = `<b>Zone:</b> ${feature.properties.zone}<br/><b>Borough:</b> ${feature.properties.borough}<br/><b>Trips:</b> ${trips}<br/><b>Tip:</b> Error loading tip info`;
-          layer.setPopupContent(popupContent);
+          setTipInfo(prev => {
+            const newTipInfo = { ...prev, [locationId]: avgTip };
+            // Update popup with new tip info
+            layer.setPopupContent(updatePopupContent(counts, newTipInfo, feature));
+            return newTipInfo;
+          });
+        } catch (error) {
+          console.error("Error fetching tip info:", error);
+          layer.setPopupContent(updatePopupContent(counts, { ...tipInfo, [locationId]: null }, feature));
         }
-      } else {
-        const avgTip = tipInfo[locationId];
-        popupContent = `<b>Zone:</b> ${feature.properties.zone}<br/><b>Borough:</b> ${feature.properties.borough}<br/><b>Trips:</b> ${trips}<br/><b>Average Tip:</b> ${avgTip !== null ? `$${avgTip.toFixed(2)}` : 'N/A'}`;
-        layer.setPopupContent(popupContent);
       }
     });
-  }, [counts, tipInfo]);
+  }, [counts, tipInfo]); // Only include counts and tipInfo as dependencies
 
   if (error) {
     console.error("GeoJSON error:", error);
@@ -229,21 +239,28 @@ export default function MapView() {
 
   // Fetch demand data
   useEffect(() => {
-    if (!zonesData) return; // Don't fetch until zones are loaded
+    if (!zonesData) {
+      console.log("Not fetching demand data yet - waiting for zones data");
+      return;
+    }
 
+    console.log("Starting demand data fetch for hour:", hour);
     setError(null);
     fetchDemand(hour)
       .then((rows: DemandRow[]) => {
         console.log("Demand data received:", {
           rowCount: rows.length,
           sample: rows.slice(0, 5),
-          locationIds: rows.map(r => r.PULocationID).sort((a, b) => a - b)
+          locationIds: rows.map(r => r.PULocationID).sort((a, b) => a - b),
+          hour,
+          hasZonesData: !!zonesData
         });
         const m: Record<number, number> = {};
         rows.forEach(r => {
           m[r.PULocationID] = r.n_trips;
           console.log(`Mapping location ID ${r.PULocationID} to ${r.n_trips} trips`);
         });
+        console.log("Setting counts state with", Object.keys(m).length, "entries");
         setCounts(m);
       })
       .catch(err => {
@@ -251,6 +268,15 @@ export default function MapView() {
         setError("Failed to load demand data. Please try again later.");
       });
   }, [hour, zonesData]);
+
+  // Add logging to track counts state changes
+  useEffect(() => {
+    console.log("Counts state updated:", {
+      count: Object.keys(counts).length,
+      sample: Object.entries(counts).slice(0, 5),
+      hour
+    });
+  }, [counts, hour]);
 
   const zoneStyle: StyleFunction = useCallback((feature) => {
     if (!feature) return {};
@@ -275,62 +301,117 @@ export default function MapView() {
   }
 
   return (
-    <div style={{ position: 'relative', height: '100vh' }}>
-      {error && (
+    <div style={{ position: 'relative', height: '100vh', display: 'flex' }}>
+      <div style={{ flex: 1, position: 'relative' }}>
+        {error && (
+          <div style={{
+            position: 'absolute',
+            top: '10px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1000,
+            background: 'rgba(255, 0, 0, 0.1)',
+            padding: '10px',
+            borderRadius: '5px',
+            border: '1px solid red'
+          }}>
+            {error}
+          </div>
+        )}
         <div style={{
           position: 'absolute',
           top: '10px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          background: 'rgba(255, 0, 0, 0.1)',
-          padding: '10px',
-          borderRadius: '5px',
-          border: '1px solid red'
-        }}>
-          {error}
-        </div>
-      )}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        left: '10px',
-        zIndex: 1000,
-        background: 'rgba(0,0,0,0.7)',
-        color: 'white',
-        padding: '4px 12px',
-        borderRadius: '6px',
-        fontWeight: 'bold',
-        fontSize: '1.1em',
-      }}>
-        Hour: {hour}:00
-      </div>
-      <input 
-        type="range" 
-        min={0} 
-        max={23} 
-        value={hour}
-        onChange={e => setHour(+e.target.value)}
-        style={{
-          position: 'absolute',
-          top: '40px',
           left: '10px',
           zIndex: 1000,
-          width: '200px'
-        }}
-      />
-      <MapContainer 
-        style={{ height: "100vh", width: "100%" }}
-        scrollWheelZoom={true}
-        maxBounds={[[40.4774, -74.2591], [40.9176, -73.7004]]} // NYC bounding box
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          background: 'rgba(0,0,0,0.7)',
+          color: 'white',
+          padding: '4px 12px',
+          borderRadius: '6px',
+          fontWeight: 'bold',
+          fontSize: '1.1em',
+        }}>
+          Hour: {hour}:00
+        </div>
+        <input 
+          type="range" 
+          min={0} 
+          max={23} 
+          value={hour}
+          onChange={e => setHour(+e.target.value)}
+          style={{
+            position: 'absolute',
+            top: '40px',
+            left: '10px',
+            zIndex: 1000,
+            width: '200px'
+          }}
         />
-        <GeoJSONLayer data={zonesData} style={zoneStyle} counts={counts} />
-        {zonesData && <FitBounds data={zonesData} />}
-      </MapContainer>
+        <MapContainer 
+          style={{ height: "100vh", width: "100%" }}
+          scrollWheelZoom={true}
+          maxBounds={[[40.4774, -74.2591], [40.9176, -73.7004]]} // NYC bounding box
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <GeoJSONLayer data={zonesData} style={zoneStyle} counts={counts} />
+          {zonesData && <FitBounds data={zonesData} />}
+        </MapContainer>
+      </div>
+      <div style={{
+        width: '300px',
+        background: 'rgba(255, 255, 255, 0.95)',
+        boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.1)',
+        padding: '20px',
+        overflowY: 'auto',
+        height: '100vh',
+        borderLeft: '1px solid rgba(0, 0, 0, 0.1)'
+      }}>
+        <h2 style={{ 
+          margin: '0 0 20px 0',
+          fontSize: '1.5em',
+          fontWeight: '600',
+          color: '#333'
+        }}>
+          NYC Taxi Insights
+        </h2>
+        <div style={{ 
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <p style={{ margin: '0', color: '#666' }}>
+            Select a zone on the map to view detailed information about taxi activity in that area.
+          </p>
+        </div>
+        {/* Placeholder for future features */}
+        <div style={{ 
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <h3 style={{ 
+            margin: '0 0 10px 0',
+            fontSize: '1.1em',
+            color: '#444'
+          }}>
+            Coming Soon
+          </h3>
+          <ul style={{ 
+            margin: '0',
+            padding: '0 0 0 20px',
+            color: '#666'
+          }}>
+            <li>Zone comparison</li>
+            <li>Historical trends</li>
+            <li>Popular routes</li>
+            <li>Peak hours analysis</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 } 
