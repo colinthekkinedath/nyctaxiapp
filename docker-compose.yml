@@ -1,0 +1,52 @@
+services:
+  cloud-sql-proxy:
+    image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.8.1
+    command: --address 0.0.0.0 --port 3306 ${CLOUDSQL_CONNECTION_NAME}
+    environment:
+      - CLOUDSQL_CONNECTION_NAME=${CLOUDSQL_CONNECTION_NAME}
+      - GOOGLE_APPLICATION_CREDENTIALS=/home/cloud-sql-proxy/.config/gcloud/application_default_credentials.json
+    user: "1000:1000"  # Use your host user's UID:GID
+    ports:
+      - "3306:3306"
+    volumes:
+      - type: bind
+        source: ${HOME}/.config/gcloud
+        target: /home/cloud-sql-proxy/.config/gcloud
+        read_only: true
+
+  backend:
+    build: ./backend
+    env_file: .env               # contains CLOUDSQL_*, DB_USER, DB_PASS
+    environment:
+      - ENV=development
+      - GOOGLE_APPLICATION_CREDENTIALS=/home/appuser/.config/gcloud/application_default_credentials.json
+    user: "1000:1000"  # Use your host user's UID:GID
+    ports: ["8000:8000"]
+    command: >
+      sh -c "sleep 10 && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - type: bind
+        source: ${HOME}/.config/gcloud
+        target: /home/appuser/.config/gcloud
+        read_only: true
+      - type: bind
+        source: ./frontend/public
+        target: /app/frontend/public
+        read_only: true
+    # For local dev, uncomment if you're using the Cloud SQL Auth Proxy:
+    # volumes:
+    #   - "./cloudsql:/cloudsql"
+    depends_on:
+      - cloud-sql-proxy
+    restart: on-failure
+
+  frontend:
+    build: ./frontend
+    environment:
+      - VITE_API_BASE=/api
+    ports: ["3000:80"]
+    volumes:
+      - type: bind
+        source: ./frontend/dist
+        target: /usr/share/nginx/html
+    depends_on: [backend] 
