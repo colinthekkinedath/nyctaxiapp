@@ -45,6 +45,12 @@ export default function MapView() {
     pitch: 0
   });
 
+  const formatHour = (hour: number): string => {
+    if (hour === 0) return '12 AM';
+    if (hour === 12) return '12 PM';
+    return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
+  };
+
   // Load GeoJSON data
   useEffect(() => {
     async function loadZones() {
@@ -182,7 +188,7 @@ export default function MapView() {
           fontSize: '1.1em',
           boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
         }}>
-          Hour: {hour}:00
+          Hour: {formatHour(hour)}
         </div>
         <input 
           type="range" 
@@ -260,7 +266,7 @@ export default function MapView() {
           fontWeight: '600',
           color: '#fff'
         }}>
-          NYC Taxi Insights
+          NYC Taxi Insights 2024
         </h2>
         
         {selectedZone ? (
