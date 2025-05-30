@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import Map, { Source, Layer, NavigationControl, Popup } from 'react-map-gl/maplibre';
+import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
 import type { ViewStateChangeEvent, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
 import { fetchDemand, fetchTips } from "../api";
@@ -35,7 +35,7 @@ export default function MapView() {
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [error, setError] = useState<string | null>(null);
   const [zonesData, setZonesData] = useState<ZoneFeatureCollection | null>(null);
-  const [popupInfo, setPopupInfo] = useState<PopupInfo | null>(null);
+  const [selectedZone, setSelectedZone] = useState<PopupInfo | null>(null);
   const [tipInfo, setTipInfo] = useState<Record<number, number | null>>({});
   const [viewState, setViewState] = useState({
     longitude: -73.935242,
@@ -121,8 +121,8 @@ export default function MapView() {
     const locationId = parseInt(feature.properties.LocationID, 10);
     const trips = counts[locationId] || 0;
 
-    // Set popup info
-    setPopupInfo({
+    // Set selected zone info
+    setSelectedZone({
       longitude: event.lngLat.lng,
       latitude: event.lngLat.lat,
       zone: feature.properties.zone,
@@ -137,7 +137,7 @@ export default function MapView() {
         .then(tipData => {
           const avgTip = tipData?.average ?? null;
           setTipInfo(prev => ({ ...prev, [locationId]: avgTip }));
-          setPopupInfo(prev => prev ? { ...prev, avgTip } : null);
+          setSelectedZone(prev => prev ? { ...prev, avgTip } : null);
         })
         .catch(error => {
           console.error("Error fetching tip info:", error);
@@ -242,25 +242,6 @@ export default function MapView() {
               }}
             />
           </Source>
-          {popupInfo && (
-            <Popup
-              longitude={popupInfo.longitude}
-              latitude={popupInfo.latitude}
-              onClose={() => setPopupInfo(null)}
-              closeButton={true}
-              closeOnClick={false}
-              anchor="bottom"
-            >
-              <div style={{ padding: '8px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.1em' }}>{popupInfo.zone}</h3>
-                <p style={{ margin: '0 0 4px 0' }}><strong>Borough:</strong> {popupInfo.borough}</p>
-                <p style={{ margin: '0 0 4px 0' }}><strong>Trips:</strong> {popupInfo.trips.toLocaleString()}</p>
-                <p style={{ margin: '0' }}>
-                  <strong>Average Tip:</strong> {popupInfo.avgTip !== null ? `$${popupInfo.avgTip.toFixed(2)}` : 'N/A'}
-                </p>
-              </div>
-            </Popup>
-          )}
         </Map>
       </div>
       <div style={{
@@ -281,17 +262,67 @@ export default function MapView() {
         }}>
           NYC Taxi Insights
         </h2>
-        <div style={{ 
-          padding: '15px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '8px',
-          marginBottom: '15px',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <p style={{ margin: '0', color: '#b0b0b0' }}>
-            Select a zone on the map to view detailed information about taxi activity in that area.
-          </p>
-        </div>
+        
+        {selectedZone ? (
+          <div style={{ 
+            padding: '15px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '8px',
+            marginBottom: '15px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <h3 style={{ 
+              margin: '0 0 12px 0',
+              fontSize: '1.2em',
+              color: '#fff',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              paddingBottom: '8px'
+            }}>
+              {selectedZone.zone}
+            </h3>
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ margin: '0 0 8px 0', color: '#b0b0b0' }}>
+                <strong style={{ color: '#fff' }}>Borough:</strong> {selectedZone.borough}
+              </p>
+              <p style={{ margin: '0 0 8px 0', color: '#b0b0b0' }}>
+                <strong style={{ color: '#fff' }}>Trips:</strong> {selectedZone.trips.toLocaleString()}
+              </p>
+              <p style={{ margin: '0', color: '#b0b0b0' }}>
+                <strong style={{ color: '#fff' }}>Average Tip:</strong> {selectedZone.avgTip !== null ? `$${selectedZone.avgTip.toFixed(2)}` : 'N/A'}
+              </p>
+            </div>
+            <button 
+              onClick={() => setSelectedZone(null)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: 'none',
+                color: '#fff',
+                padding: '8px 12px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.9em',
+                width: '100%'
+              }}
+              onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
+              onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+            >
+              Clear Selection
+            </button>
+          </div>
+        ) : (
+          <div style={{ 
+            padding: '15px',
+            background: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: '8px',
+            marginBottom: '15px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <p style={{ margin: '0', color: '#b0b0b0' }}>
+              Select a zone on the map to view detailed information about taxi activity in that area.
+            </p>
+          </div>
+        )}
+
         <div style={{ 
           padding: '15px',
           background: 'rgba(255, 255, 255, 0.05)',
