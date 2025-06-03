@@ -142,36 +142,36 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
     `${Math.round(minutes)} min`;
 
   const renderPerformanceTab = () => {
-    if (loading) return <div className="text-gray-400">Loading performance data...</div>;
-    if (error) return <div className="text-red-400">{error}</div>;
-    if (!tripPerformance.length) return <div className="text-gray-400">No performance data available</div>;
+    if (loading) return <div className="text-muted-foreground">Loading performance data...</div>;
+    if (error) return <div className="text-destructive">{error}</div>;
+    if (!tripPerformance.length) return <div className="text-muted-foreground">No performance data available</div>;
 
-    const data = tripPerformance[0]; // Get current hour's data
+    const data = tripPerformance[0];
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Average Trip Duration</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Average Trip Duration</div>
             <div className="text-xl font-semibold">{formatDuration(data.avg_trip_duration)}</div>
           </div>
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Average Speed</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Average Speed</div>
             <div className="text-xl font-semibold">{Math.round(data.avg_speed)} mph</div>
           </div>
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Average Fare</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Average Fare</div>
             <div className="text-xl font-semibold">{formatCurrency(data.avg_fare)}</div>
           </div>
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Average Tip</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Average Tip</div>
             <div className="text-xl font-semibold">{formatCurrency(data.avg_tip)}</div>
           </div>
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Revenue per Mile</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Revenue per Mile</div>
             <div className="text-xl font-semibold">{formatCurrency(data.avg_revenue_per_mile)}</div>
           </div>
-          <div className="bg-gray-700 p-3 rounded">
-            <div className="text-sm text-gray-400">Total Trips</div>
+          <div className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
+            <div className="text-xs font-medium mb-1 text-muted-foreground">Total Trips</div>
             <div className="text-xl font-semibold">{data.n_trips.toLocaleString()}</div>
           </div>
         </div>
@@ -180,48 +180,44 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
   };
 
   const renderRoutesTab = () => {
-    if (loading) return <div className="text-gray-400">Loading routes data...</div>;
-    if (error) return <div className="text-red-400">{error}</div>;
-    if (!popularRoutes.length) return <div className="text-gray-400">No routes data available</div>;
-
-    console.log('Current zone data:', zoneData); // Debug log
-    console.log('Popular routes:', popularRoutes); // Debug log
+    if (loading) return <div className="text-muted-foreground">Loading routes data...</div>;
+    if (error) return <div className="text-destructive">{error}</div>;
+    if (!popularRoutes.length) return <div className="text-muted-foreground">No routes data available</div>;
 
     return (
       <div className="space-y-3">
         {popularRoutes.map((route, idx) => {
           const destinationZone = zoneData[route.DOLocationID];
-          console.log(`Looking up zone ${route.DOLocationID}:`, destinationZone); // Debug log
           return (
-            <div key={idx} className="bg-gray-700 p-3 rounded">
+            <div key={idx} className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
               <div className="flex justify-between items-center mb-2">
-                <div className="font-semibold">
+                <div className="font-semibold text-base">
                   {destinationZone ? (
                     <>
                       {destinationZone.zone}
-                      <span className="text-sm text-gray-400 ml-2">({destinationZone.borough})</span>
+                      <span className="text-xs text-muted-foreground ml-2">({destinationZone.borough})</span>
                     </>
                   ) : (
                     `Zone ${route.DOLocationID}`
                   )}
                 </div>
-                <div className="text-sm text-gray-400">{route.n_trips} trips</div>
+                <div className="text-xs text-muted-foreground">{route.n_trips} trips</div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-gray-400">Avg. Duration:</span>
+                  <span className="text-muted-foreground">Avg. Duration:</span>
                   <span className="ml-2">{formatDuration(route.avg_duration)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Avg. Fare:</span>
+                  <span className="text-muted-foreground">Avg. Fare:</span>
                   <span className="ml-2">{formatCurrency(route.avg_fare)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Avg. Distance:</span>
+                  <span className="text-muted-foreground">Avg. Distance:</span>
                   <span className="ml-2">{route.avg_distance.toFixed(1)} mi</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Avg. Tip:</span>
+                  <span className="text-muted-foreground">Avg. Tip:</span>
                   <span className="ml-2">{formatCurrency(route.avg_tip)}</span>
                 </div>
               </div>
@@ -233,33 +229,33 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
   };
 
   const renderPaymentsTab = () => {
-    if (loading) return <div className="text-gray-400">Loading payment data...</div>;
-    if (error) return <div className="text-red-400">{error}</div>;
-    if (!paymentAnalysis.length) return <div className="text-gray-400">No payment data available</div>;
+    if (loading) return <div className="text-muted-foreground">Loading payment data...</div>;
+    if (error) return <div className="text-destructive">{error}</div>;
+    if (!paymentAnalysis.length) return <div className="text-muted-foreground">No payment data available</div>;
 
     return (
       <div className="space-y-3">
         {paymentAnalysis.map((payment, idx) => (
-          <div key={idx} className="bg-gray-700 p-3 rounded">
+          <div key={idx} className="bg-card text-card-foreground border rounded-lg shadow-sm p-4">
             <div className="flex justify-between items-center mb-2">
-              <div className="font-semibold">{payment.payment_method}</div>
-              <div className="text-sm text-gray-400">{payment.n_trips} trips</div>
+              <div className="font-semibold text-base">{payment.payment_method}</div>
+              <div className="text-xs text-muted-foreground">{payment.n_trips} trips</div>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-gray-400">Avg. Fare:</span>
+                <span className="text-muted-foreground">Avg. Fare:</span>
                 <span className="ml-2">{formatCurrency(payment.avg_fare)}</span>
               </div>
               <div>
-                <span className="text-gray-400">Avg. Tip:</span>
+                <span className="text-muted-foreground">Avg. Tip:</span>
                 <span className="ml-2">{formatCurrency(payment.avg_tip)}</span>
               </div>
               <div>
-                <span className="text-gray-400">Tip %:</span>
+                <span className="text-muted-foreground">Tip %:</span>
                 <span className="ml-2">{(payment.avg_tip_percentage * 100).toFixed(1)}%</span>
               </div>
               <div>
-                <span className="text-gray-400">Total Revenue:</span>
+                <span className="text-muted-foreground">Total Revenue:</span>
                 <span className="ml-2">{formatCurrency(payment.total_revenue)}</span>
               </div>
             </div>
@@ -270,40 +266,44 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden">
-      <div className="p-4 border-b border-gray-700">
-        <h3 className="text-lg font-semibold text-white">{zoneName}</h3>
-        <p className="text-sm text-gray-400">{borough}</p>
+    <div className="bg-muted/40 text-card-foreground rounded-2xl overflow-hidden shadow-lg border">
+      <div className="p-6 border-b">
+        <h3 className="text-2xl font-bold mb-1">{zoneName}</h3>
+        <p className="text-base text-muted-foreground">{borough}</p>
       </div>
-      
-      <div className="flex border-b border-gray-700">
+      <div className="flex border-b bg-card">
         <button
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
-            activeTab === 'performance' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            activeTab === 'performance'
+              ? 'bg-muted text-foreground shadow-inner'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
           onClick={() => setActiveTab('performance')}
         >
           Performance
         </button>
         <button
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
-            activeTab === 'routes' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            activeTab === 'routes'
+              ? 'bg-muted text-foreground shadow-inner'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
           onClick={() => setActiveTab('routes')}
         >
           Popular Routes
         </button>
         <button
-          className={`flex-1 px-4 py-2 text-sm font-medium ${
-            activeTab === 'payments' ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'
+          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+            activeTab === 'payments'
+              ? 'bg-muted text-foreground shadow-inner'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           }`}
           onClick={() => setActiveTab('payments')}
         >
           Payments
         </button>
       </div>
-
-      <div className="p-4">
+      <div className="p-6">
         {activeTab === 'performance' && renderPerformanceTab()}
         {activeTab === 'routes' && renderRoutesTab()}
         {activeTab === 'payments' && renderPaymentsTab()}

@@ -163,39 +163,6 @@ export default function MapView() {
             {error}
           </div>
         )}
-        <div style={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px',
-          zIndex: 1000,
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: '#fff',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontWeight: '500',
-          fontSize: '1.1em',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-        }}>
-          Hour: {formatHour(hour)}
-        </div>
-        <input 
-          type="range" 
-          min={0} 
-          max={23} 
-          value={hour}
-          onChange={e => setHour(+e.target.value)}
-          style={{
-            position: 'absolute',
-            top: '40px',
-            left: '10px',
-            zIndex: 1000,
-            width: '200px',
-            WebkitAppearance: 'none',
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '4px',
-            height: '6px'
-          }}
-        />
         <Map
           {...viewState}
           onMoveEnd={(evt: ViewStateChangeEvent) => {
@@ -283,25 +250,8 @@ export default function MapView() {
           </Source>
         </Map>
       </div>
-      <div style={{
-        width: '400px',
-        background: '#2a2a2a',
-        boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.3)',
-        padding: '20px',
-        overflowY: 'auto',
-        height: '100vh',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
-        color: '#e0e0e0'
-      }}>
-        <h2 style={{ 
-          margin: '0 0 20px 0',
-          fontSize: '1.5em',
-          fontWeight: '600',
-          color: '#fff'
-        }}>
-          NYC Taxi Insights 2024
-        </h2>
-        
+      <div className="dark bg-card text-card-foreground rounded-2xl shadow-xl border p-6 w-[400px] overflow-y-auto max-h-screen">
+        <h2 className="text-2xl font-bold mb-6">NYC Taxi Insights 2024</h2>
         <AnalyticsPanel
           zoneId={selectedZone?.locationId ?? null}
           zoneName={selectedZone?.zone || ''}
@@ -309,46 +259,41 @@ export default function MapView() {
           hour={hour}
         />
       </div>
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        zIndex: 1000,
-        background: 'rgba(42, 42, 42, 0.95)',
-        color: '#e0e0e0',
-        padding: '12px',
-        borderRadius: '8px',
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'center',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
+      {/* Floating Controls: Collapsed by default, expand on hover/focus */}
+      <div className="fixed top-6 left-6 z-50 group">
+        {/* Collapsed state: just an icon button */}
         <button
-          onClick={() => setViewState(prev => ({ ...prev, pitch: prev.pitch === 0 ? 45 : 0 }))}
-          style={{
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '0.95em',
-            fontWeight: '500',
-            transition: 'all 0.2s ease',
-            minWidth: '120px'
-          }}
-          onMouseOver={e => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-          }}
-          onMouseOut={e => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-          }}
+          className="bg-card border border-border rounded-full shadow-xl p-3 flex items-center justify-center cursor-pointer group-hover:hidden group-focus-within:hidden transition text-2xl"
+          tabIndex={0}
+          aria-label="Show controls"
         >
-          {viewState.pitch === 0 ? 'Show 3D View' : 'Show 2D View'}
+          🌍
         </button>
+        {/* Expanded state: on hover/focus */}
+        <div className="hidden group-hover:flex group-focus-within:flex flex-col gap-4 bg-card border border-border rounded-xl shadow-xl p-6 min-w-[260px] transition">
+          <div className="flex items-center gap-4">
+            <span className="text-muted-foreground font-medium">Hour:</span>
+            <span className="text-foreground font-bold text-lg w-16 text-center">{formatHour(hour)}</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={23}
+            value={hour}
+            onChange={e => setHour(+e.target.value)}
+            className="w-40 h-2 accent-primary bg-muted rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
+            style={{
+              WebkitAppearance: 'none',
+              appearance: 'none',
+            }}
+          />
+          <button
+            onClick={() => setViewState(prev => ({ ...prev, pitch: prev.pitch === 0 ? 45 : 0 }))}
+            className="bg-muted text-foreground border border-border rounded-lg px-6 py-2 shadow transition hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-w-[120px] font-medium text-base"
+          >
+            {viewState.pitch === 0 ? 'Show 3D View' : 'Show 2D View'}
+          </button>
+        </div>
       </div>
     </div>
   );
