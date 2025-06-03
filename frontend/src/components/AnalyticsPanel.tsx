@@ -267,41 +267,43 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
 
   return (
     <div className="bg-muted/40 text-card-foreground rounded-2xl overflow-hidden shadow-lg border">
-      <div className="p-6 border-b">
+      <div className="p-6">
         <h3 className="text-2xl font-bold mb-1">{zoneName}</h3>
         <p className="text-base text-muted-foreground">{borough}</p>
       </div>
-      <div className="flex border-b bg-card">
-        <button
-          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-            activeTab === 'performance'
-              ? 'bg-muted text-foreground shadow-inner'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('performance')}
-        >
-          Performance
-        </button>
-        <button
-          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-            activeTab === 'routes'
-              ? 'bg-muted text-foreground shadow-inner'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('routes')}
-        >
-          Popular Routes
-        </button>
-        <button
-          className={`flex-1 px-4 py-2 text-base font-medium rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-            activeTab === 'payments'
-              ? 'bg-muted text-foreground shadow-inner'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-          onClick={() => setActiveTab('payments')}
-        >
-          Payments
-        </button>
+      <div className="w-full flex justify-center py-2 px-4">
+        <div className="flex w-auto max-w-full bg-muted/30 p-1 rounded-2xl mx-auto overflow-hidden">
+          <button
+            className={`px-3 py-2 text-base font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              activeTab === 'performance'
+                ? 'bg-card text-white border-2 border-primary rounded-2xl'
+                : 'bg-muted text-muted-foreground rounded-2xl'
+            }`}
+            onClick={() => setActiveTab('performance')}
+          >
+            Performance
+          </button>
+          <button
+            className={`px-3 py-2 text-base font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              activeTab === 'routes'
+                ? 'bg-card text-white border-2 border-primary rounded-2xl'
+                : 'bg-muted text-muted-foreground rounded-2xl'
+            }`}
+            onClick={() => setActiveTab('routes')}
+          >
+            Routes
+          </button>
+          <button
+            className={`px-3 py-2 text-base font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              activeTab === 'payments'
+                ? 'bg-card text-white border-2 border-primary rounded-2xl'
+                : 'bg-muted text-muted-foreground rounded-2xl'
+            }`}
+            onClick={() => setActiveTab('payments')}
+          >
+            Payments
+          </button>
+        </div>
       </div>
       <div className="p-6">
         {activeTab === 'performance' && renderPerformanceTab()}
