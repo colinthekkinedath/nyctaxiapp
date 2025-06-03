@@ -109,7 +109,7 @@ export default function AnalyticsPanel({ zoneId, zoneName, borough, hour }: Anal
       setError(null);
       try {
         const [performance, routes, payments] = await Promise.all([
-          fetchTripPerformance(zoneId),
+          fetchTripPerformance(zoneId, hour),
           fetchPopularRoutes(zoneId, hour),
           fetchPaymentAnalysis(zoneId, hour)
         ]);
