@@ -2,6 +2,8 @@
 
 A web application for exploring NYC taxi data, featuring an interactive map visualization of demand patterns and fare anomalies.
 
+![Screenshot](screenshot.png)
+
 ## Local Development
 
 1. Create a `.env` file in the root directory with your Cloud SQL credentials:
