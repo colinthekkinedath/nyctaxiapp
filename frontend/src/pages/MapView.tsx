@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
 import type { ViewStateChangeEvent, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
-import { fetchDemand, fetchTips } from "../api";
+import { fetchDemand } from "../api";
+import AnalyticsPanel from "../components/AnalyticsPanel";
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface DemandRow {
@@ -28,6 +29,7 @@ interface PopupInfo {
   borough: string;
   trips: number;
   avgTip: number | null;
+  locationId: number;
 }
 
 export default function MapView() {
@@ -36,7 +38,6 @@ export default function MapView() {
   const [error, setError] = useState<string | null>(null);
   const [zonesData, setZonesData] = useState<ZoneFeatureCollection | null>(null);
   const [selectedZone, setSelectedZone] = useState<PopupInfo | null>(null);
-  const [tipInfo, setTipInfo] = useState<Record<number, number | null>>({});
   const [viewState, setViewState] = useState({
     longitude: -73.935242,
     latitude: 40.730610,
@@ -134,23 +135,10 @@ export default function MapView() {
       zone: feature.properties.zone,
       borough: feature.properties.borough,
       trips,
-      avgTip: tipInfo[locationId] ?? null
+      avgTip: null,
+      locationId
     });
-
-    // Fetch tip info if not already fetched
-    if (tipInfo[locationId] === undefined) {
-      fetchTips(locationId)
-        .then(tipData => {
-          const avgTip = tipData?.average ?? null;
-          setTipInfo(prev => ({ ...prev, [locationId]: avgTip }));
-          setSelectedZone(prev => prev ? { ...prev, avgTip } : null);
-        })
-        .catch(error => {
-          console.error("Error fetching tip info:", error);
-          setTipInfo(prev => ({ ...prev, [locationId]: null }));
-        });
-    }
-  }, [counts, tipInfo]);
+  }, [counts]);
 
   if (!zonesData) {
     return <div>Loading taxi zones data...</div>;
@@ -296,7 +284,7 @@ export default function MapView() {
         </Map>
       </div>
       <div style={{
-        width: '300px',
+        width: '400px',
         background: '#2a2a2a',
         boxShadow: '-2px 0 5px rgba(0, 0, 0, 0.3)',
         padding: '20px',
@@ -314,91 +302,12 @@ export default function MapView() {
           NYC Taxi Insights 2024
         </h2>
         
-        {selectedZone ? (
-          <div style={{ 
-            padding: '15px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '8px',
-            marginBottom: '15px',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <h3 style={{ 
-              margin: '0 0 12px 0',
-              fontSize: '1.2em',
-              color: '#fff',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-              paddingBottom: '8px'
-            }}>
-              {selectedZone.zone}
-            </h3>
-            <div style={{ marginBottom: '12px' }}>
-              <p style={{ margin: '0 0 8px 0', color: '#b0b0b0' }}>
-                <strong style={{ color: '#fff' }}>Borough:</strong> {selectedZone.borough}
-              </p>
-              <p style={{ margin: '0 0 8px 0', color: '#b0b0b0' }}>
-                <strong style={{ color: '#fff' }}>Trips:</strong> {selectedZone.trips.toLocaleString()}
-              </p>
-              <p style={{ margin: '0', color: '#b0b0b0' }}>
-                <strong style={{ color: '#fff' }}>Average Tip:</strong> {selectedZone.avgTip !== null ? `$${selectedZone.avgTip.toFixed(2)}` : 'N/A'}
-              </p>
-            </div>
-            <button 
-              onClick={() => setSelectedZone(null)}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                color: '#fff',
-                padding: '8px 12px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.9em',
-                width: '100%'
-              }}
-              onMouseOver={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'}
-              onMouseOut={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
-            >
-              Clear Selection
-            </button>
-          </div>
-        ) : (
-          <div style={{ 
-            padding: '15px',
-            background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '8px',
-            marginBottom: '15px',
-            border: '1px solid rgba(255, 255, 255, 0.1)'
-          }}>
-            <p style={{ margin: '0', color: '#b0b0b0' }}>
-              Select a zone on the map to view detailed information about taxi activity in that area.
-            </p>
-          </div>
-        )}
-
-        <div style={{ 
-          padding: '15px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '8px',
-          marginBottom: '15px',
-          border: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <h3 style={{ 
-            margin: '0 0 10px 0',
-            fontSize: '1.1em',
-            color: '#fff'
-          }}>
-            Coming Soon
-          </h3>
-          <ul style={{ 
-            margin: '0',
-            padding: '0 0 0 20px',
-            color: '#b0b0b0'
-          }}>
-            <li>Zone comparison</li>
-            <li>Historical trends</li>
-            <li>Popular routes</li>
-            <li>Peak hours analysis</li>
-          </ul>
-        </div>
+        <AnalyticsPanel
+          zoneId={selectedZone?.locationId ?? null}
+          zoneName={selectedZone?.zone || ''}
+          borough={selectedZone?.borough || ''}
+          hour={hour}
+        />
       </div>
       <div style={{
         position: 'absolute',

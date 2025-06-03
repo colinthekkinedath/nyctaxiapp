@@ -1,8 +1,12 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, inspect, distinct
-from .models import demand_heatmap, tip_trends, fare_anomalies, get_session, init_models, get_engine
+from sqlalchemy import select, inspect, distinct, and_, desc
+from .models import (
+    demand_heatmap, tip_trends, fare_anomalies, trip_performance,
+    popular_routes, payment_analysis,
+    get_session, init_models, get_engine
+)
 import json
 from pathlib import Path
 import os
@@ -240,4 +244,121 @@ async def get_tip_for_zone(zone_id: int, session: AsyncSession = Depends(get_ses
         raise HTTPException(status_code=404, detail="No tip data found for this zone")
     # Average across all payment types for this zone
     avg_tip = sum(row.avg_tip_pct for row in rows) / len(rows)
-    return {"average": avg_tip} 
+    return {"average": avg_tip}
+
+@app.get("/api/trip-performance/{zone_id}")
+async def get_trip_performance(
+    zone_id: int,
+    hour: int | None = None,
+    is_weekend: bool | None = None,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get trip performance metrics for a specific zone."""
+    try:
+        conditions = [trip_performance.c.PULocationID == zone_id]
+        if hour is not None:
+            conditions.append(trip_performance.c.pickup_hour == hour)
+        if is_weekend is not None:
+            conditions.append(trip_performance.c.is_weekend == is_weekend)
+            
+        query = select(trip_performance).where(and_(*conditions))
+        result = await session.execute(query)
+        rows = result.fetchall()
+        
+        if not rows:
+            raise HTTPException(status_code=404, detail="No trip performance data found")
+            
+        return [
+            {
+                "pickup_hour": row.pickup_hour,
+                "pickup_dow": row.pickup_dow,
+                "avg_trip_duration": row.avg_trip_duration,
+                "avg_speed": row.avg_speed,
+                "avg_revenue_per_mile": row.avg_revenue_per_mile,
+                "avg_fare": row.avg_fare,
+                "total_revenue": row.total_revenue,
+                "n_trips": row.n_trips,
+                "avg_trip_distance": row.avg_trip_distance,
+                "avg_tip": row.avg_tip,
+                "avg_tip_percentage": row.avg_tip_percentage,
+                "is_weekend": row.is_weekend
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/popular-routes/{zone_id}")
+async def get_popular_routes(
+    zone_id: int,
+    hour: int | None = None,
+    limit: int = 10,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get popular routes from a specific zone."""
+    try:
+        conditions = [popular_routes.c.PULocationID == zone_id]
+        if hour is not None:
+            conditions.append(popular_routes.c.pickup_hour == hour)
+            
+        query = (
+            select(popular_routes)
+            .where(and_(*conditions))
+            .order_by(desc(popular_routes.c.n_trips))
+            .limit(limit)
+        )
+        result = await session.execute(query)
+        rows = result.fetchall()
+        
+        if not rows:
+            raise HTTPException(status_code=404, detail="No popular routes found")
+            
+        return [
+            {
+                "DOLocationID": row.DOLocationID,
+                "pickup_hour": row.pickup_hour,
+                "n_trips": row.n_trips,
+                "avg_duration": row.avg_duration,
+                "avg_fare": row.avg_fare,
+                "avg_distance": row.avg_distance,
+                "avg_tip": row.avg_tip
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/payment-analysis/{zone_id}")
+async def get_payment_analysis(
+    zone_id: int,
+    hour: int | None = None,
+    session: AsyncSession = Depends(get_session)
+):
+    """Get payment analysis for a specific zone."""
+    try:
+        conditions = [payment_analysis.c.PULocationID == zone_id]
+        if hour is not None:
+            conditions.append(payment_analysis.c.pickup_hour == hour)
+            
+        query = select(payment_analysis).where(and_(*conditions))
+        result = await session.execute(query)
+        rows = result.fetchall()
+        
+        if not rows:
+            raise HTTPException(status_code=404, detail="No payment analysis data found")
+            
+        return [
+            {
+                "pickup_hour": row.pickup_hour,
+                "payment_type": row.payment_type,
+                "payment_method": row.payment_method,
+                "n_trips": row.n_trips,
+                "avg_fare": row.avg_fare,
+                "avg_tip": row.avg_tip,
+                "avg_tip_percentage": row.avg_tip_percentage,
+                "total_revenue": row.total_revenue
+            }
+            for row in rows
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 
