@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
 import type { ViewStateChangeEvent, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
@@ -17,6 +17,7 @@ interface ZoneFeature extends Feature<Polygon | MultiPolygon> {
     LocationID: string;
     zone: string;
     borough: string;
+    trips?: number; // Add trips directly to properties
   };
 }
 
@@ -36,7 +37,7 @@ export default function MapView() {
   const [hour, setHour] = useState(17);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [error, setError] = useState<string | null>(null);
-  const [zonesData, setZonesData] = useState<ZoneFeatureCollection | null>(null);
+  const [rawZonesData, setRawZonesData] = useState<ZoneFeatureCollection | null>(null);
   const [selectedZone, setSelectedZone] = useState<PopupInfo | null>(null);
   const [viewState, setViewState] = useState({
     longitude: -73.935242,
@@ -45,6 +46,53 @@ export default function MapView() {
     bearing: 0,
     pitch: 45
   });
+
+  // Memoize the enhanced GeoJSON data with trip counts
+  const enhancedZonesData = useMemo(() => {
+    if (!rawZonesData) return null;
+
+    return {
+      ...rawZonesData,
+      features: rawZonesData.features.map(feature => ({
+        ...feature,
+        properties: {
+          ...feature.properties,
+          trips: counts[parseInt(feature.properties.LocationID, 10)] || 0
+        }
+      }))
+    };
+  }, [rawZonesData, counts]);
+
+  // Memoize color and height expressions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const colorExpression = useMemo((): any => [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'trips'], 0],
+    0, '#FFEDA0',
+    100, '#FED976',
+    500, '#FEB24C',
+    1000, '#FD8D3C',
+    2000, '#FC4E2A',
+    5000, '#E31A1C',
+    10000, '#BD0026',
+    20000, '#800026'
+  ], []);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const heightExpression = useMemo((): any => [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'trips'], 0],
+    0, 0,
+    100, 50,
+    500, 100,
+    1000, 200,
+    2000, 300,
+    5000, 400,
+    10000, 500,
+    20000, 600
+  ], []);
 
   const formatHour = (hour: number): string => {
     if (hour === 0) return '12 AM';
@@ -93,7 +141,7 @@ export default function MapView() {
           })
         };
         console.log('Sample zone feature:', transformed.features[0]);
-        setZonesData(transformed as ZoneFeatureCollection);
+        setRawZonesData(transformed as ZoneFeatureCollection);
       } catch (err) {
         console.error("Error loading taxi zones:", err);
         setError("Failed to load taxi zones data");
@@ -104,7 +152,7 @@ export default function MapView() {
 
   // Fetch demand data
   useEffect(() => {
-    if (!zonesData) return;
+    if (!rawZonesData) return;
 
     setError(null);
     fetchDemand(hour)
@@ -120,7 +168,7 @@ export default function MapView() {
         console.error("Error fetching demand data:", err);
         setError("Failed to load demand data. Please try again later.");
       });
-  }, [hour, zonesData]);
+  }, [hour, rawZonesData]);
 
   const handleZoneClick = useCallback((event: MapLayerMouseEvent) => {
     if (!event.features || event.features.length === 0) return;
@@ -140,7 +188,13 @@ export default function MapView() {
     });
   }, [counts]);
 
-  if (!zonesData) {
+  // Add view state change optimization
+  const handleViewStateChange = useCallback((evt: ViewStateChangeEvent) => {
+    const { longitude, latitude, zoom, bearing, pitch } = evt.viewState;
+    setViewState({ longitude, latitude, zoom, bearing, pitch });
+  }, []);
+
+  if (!enhancedZonesData) {
     return <div>Loading taxi zones data...</div>;
   }
 
@@ -165,88 +219,45 @@ export default function MapView() {
         )}
         <Map
           {...viewState}
-          onMoveEnd={(evt: ViewStateChangeEvent) => {
-            const { longitude, latitude, zoom, bearing, pitch } = evt.viewState;
-            setViewState({ longitude, latitude, zoom, bearing, pitch });
-          }}
+          onMove={handleViewStateChange}
           mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
           style={{ width: '100%', height: '100%' }}
           onClick={handleZoneClick}
-          interactiveLayerIds={['zones', 'zones-extrusion']}
+          interactiveLayerIds={viewState.pitch > 0 ? ['zones-extrusion'] : ['zones']}
+          maxZoom={16}
         >
           <NavigationControl />
-          <Source type="geojson" data={zonesData}>
-            <Layer
-              id="zones"
-              type="fill"
-              paint={{
-                'fill-color': [
-                  'case',
-                  ['has', ['get', 'LocationID', ['properties']], ['literal', counts]],
-                  [
-                    'interpolate',
-                    ['linear'],
-                    ['to-number', ['get', ['get', 'LocationID', ['properties']], ['literal', counts]]],
-                    0, '#FFEDA0',
-                    100, '#FED976',
-                    500, '#FEB24C',
-                    1000, '#FD8D3C',
-                    2000, '#FC4E2A',
-                    5000, '#E31A1C',
-                    10000, '#BD0026',
-                    20000, '#800026'
-                  ],
-                  '#FFEDA0'
-                ],
-                'fill-opacity': 0.7,
-                'fill-outline-color': '#000'
-              }}
-            />
-            <Layer
-              id="zones-extrusion"
-              type="fill-extrusion"
-              paint={{
-                'fill-extrusion-color': [
-                  'case',
-                  ['has', ['get', 'LocationID', ['properties']], ['literal', counts]],
-                  [
-                    'interpolate',
-                    ['linear'],
-                    ['to-number', ['get', ['get', 'LocationID', ['properties']], ['literal', counts]]],
-                    0, '#FFEDA0',
-                    100, '#FED976',
-                    500, '#FEB24C',
-                    1000, '#FD8D3C',
-                    2000, '#FC4E2A',
-                    5000, '#E31A1C',
-                    10000, '#BD0026',
-                    20000, '#800026'
-                  ],
-                  '#FFEDA0'
-                ],
-                'fill-extrusion-height': [
-                  'case',
-                  ['has', ['get', 'LocationID', ['properties']], ['literal', counts]],
-                  [
-                    'interpolate',
-                    ['linear'],
-                    ['to-number', ['get', ['get', 'LocationID', ['properties']], ['literal', counts]]],
-                    0, 0,
-                    100, 50,
-                    500, 100,
-                    1000, 200,
-                    2000, 300,
-                    5000, 400,
-                    10000, 500,
-                    20000, 600
-                  ],
-                  0
-                ],
-                'fill-extrusion-base': 0,
-                'fill-extrusion-opacity': 0.7,
-                'fill-extrusion-vertical-gradient': true
-              }}
-            />
+          <Source 
+            type="geojson" 
+            data={enhancedZonesData}
+            generateId={true}
+            buffer={0}
+            tolerance={0.375}
+            maxzoom={14}
+          >
+            {viewState.pitch === 0 ? (
+              <Layer
+                id="zones"
+                type="fill"
+                paint={{
+                  'fill-color': colorExpression,
+                  'fill-opacity': 0.7,
+                  'fill-outline-color': '#000'
+                }}
+              />
+            ) : (
+              <Layer
+                id="zones-extrusion"
+                type="fill-extrusion"
+                paint={{
+                  'fill-extrusion-color': colorExpression,
+                  'fill-extrusion-height': heightExpression,
+                  'fill-extrusion-base': 0,
+                  'fill-extrusion-opacity': 0.7,
+                  'fill-extrusion-vertical-gradient': true
+                }}
+              />
+            )}
           </Source>
         </Map>
       </div>

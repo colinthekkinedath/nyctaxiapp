@@ -58,9 +58,13 @@ export default defineConfig({
           arrowFunctions: true,
           constBindings: true,
           objectShorthand: true
+        },
+        manualChunks: {
+          'maplibre': ['maplibre-gl', 'react-map-gl/maplibre', '@vis.gl/react-maplibre']
         }
       }
-    }
+    },
+    chunkSizeWarningLimit: 1200
   },
   resolve: {
     alias: {
