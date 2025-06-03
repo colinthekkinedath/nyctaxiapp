@@ -199,8 +199,8 @@ export default function MapView() {
   }
 
   return (
-    <div style={{ position: 'relative', height: '100vh', display: 'flex', background: '#1a1a1a' }}>
-      <div style={{ flex: 1, position: 'relative' }}>
+    <div style={{ position: 'relative', height: '100vh', display: 'flex', background: '#1a1a1a', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0 }}>
         {error && (
           <div style={{
             position: 'absolute',
@@ -226,7 +226,44 @@ export default function MapView() {
           interactiveLayerIds={viewState.pitch > 0 ? ['zones-extrusion'] : ['zones']}
           maxZoom={16}
         >
-          <NavigationControl />
+          <NavigationControl 
+            position="bottom-left" 
+            showCompass={true}
+            showZoom={true}
+            visualizePitch={true}
+            style={{
+              marginLeft: '12px',
+              marginBottom: '12px',
+            }}
+          />
+          <style>
+            {`
+              .maplibregl-ctrl-group {
+                background: rgb(24, 24, 27) !important;
+                border: 1px solid rgb(39, 39, 42) !important;
+                box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1) !important;
+                border-radius: 0.75rem !important;
+                overflow: hidden !important;
+              }
+              .maplibregl-ctrl-group button {
+                background-color: rgb(24, 24, 27) !important;
+                border: none !important;
+                border-bottom: 1px solid rgb(39, 39, 42) !important;
+              }
+              .maplibregl-ctrl-group button:last-child {
+                border-bottom: none !important;
+              }
+              .maplibregl-ctrl-group button:hover {
+                background-color: rgb(39, 39, 42) !important;
+              }
+              .maplibregl-ctrl-group button span {
+                filter: invert(0.7) !important;
+              }
+              .maplibregl-ctrl-group button:hover span {
+                filter: invert(0.9) !important;
+              }
+            `}
+          </style>
           <Source 
             type="geojson" 
             data={enhancedZonesData}
@@ -261,7 +298,7 @@ export default function MapView() {
           </Source>
         </Map>
       </div>
-      <div className="dark bg-card text-card-foreground rounded-2xl shadow-xl border p-6 w-[400px] overflow-y-auto max-h-screen">
+      <div className="dark bg-card text-card-foreground rounded-l-2xl shadow-xl border border-r-0 p-6 w-[400px] overflow-y-auto max-h-screen absolute right-0 top-0 bottom-0">
         <h2 className="text-2xl font-bold mb-6">NYC Taxi Insights 2024</h2>
         <AnalyticsPanel
           zoneId={selectedZone?.locationId ?? null}
