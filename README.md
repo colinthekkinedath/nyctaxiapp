@@ -2,7 +2,7 @@
 
 A web application for exploring NYC taxi data, featuring an interactive map visualization of demand patterns and fare anomalies.
 
-![Screenshot](screenshot.png)
+![Screenshot](screenshot.jpeg)
 
 ## Local Development
 
