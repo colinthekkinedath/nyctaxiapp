@@ -1,10 +1,18 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import Map, { Source, Layer, NavigationControl } from 'react-map-gl/maplibre';
-import type { ViewStateChangeEvent, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
-import type { Feature, FeatureCollection, Polygon, MultiPolygon } from "geojson";
+import Map, { Source, Layer, NavigationControl } from "react-map-gl/maplibre";
+import type {
+  ViewStateChangeEvent,
+  MapLayerMouseEvent,
+} from "@vis.gl/react-maplibre";
+import type {
+  Feature,
+  FeatureCollection,
+  Polygon,
+  MultiPolygon,
+} from "geojson";
 import { fetchDemand } from "../api";
 import AnalyticsPanel from "../components/AnalyticsPanel";
-import 'maplibre-gl/dist/maplibre-gl.css';
+import "maplibre-gl/dist/maplibre-gl.css";
 
 interface DemandRow {
   PULocationID: number;
@@ -21,7 +29,10 @@ interface ZoneFeature extends Feature<Polygon | MultiPolygon> {
   };
 }
 
-type ZoneFeatureCollection = FeatureCollection<Polygon | MultiPolygon, ZoneFeature['properties']>;
+type ZoneFeatureCollection = FeatureCollection<
+  Polygon | MultiPolygon,
+  ZoneFeature["properties"]
+>;
 
 interface PopupInfo {
   longitude: number;
@@ -37,14 +48,15 @@ export default function MapView() {
   const [hour, setHour] = useState(17);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [error, setError] = useState<string | null>(null);
-  const [rawZonesData, setRawZonesData] = useState<ZoneFeatureCollection | null>(null);
+  const [rawZonesData, setRawZonesData] =
+    useState<ZoneFeatureCollection | null>(null);
   const [selectedZone, setSelectedZone] = useState<PopupInfo | null>(null);
   const [viewState, setViewState] = useState({
     longitude: -73.935242,
-    latitude: 40.730610,
+    latitude: 40.73061,
     zoom: 10,
     bearing: 0,
-    pitch: 45
+    pitch: 45,
   });
 
   // Memoize the enhanced GeoJSON data with trip counts
@@ -53,50 +65,74 @@ export default function MapView() {
 
     return {
       ...rawZonesData,
-      features: rawZonesData.features.map(feature => ({
+      features: rawZonesData.features.map((feature) => ({
         ...feature,
         properties: {
           ...feature.properties,
-          trips: counts[parseInt(feature.properties.LocationID, 10)] || 0
-        }
-      }))
+          trips: counts[parseInt(feature.properties.LocationID, 10)] || 0,
+        },
+      })),
     };
   }, [rawZonesData, counts]);
 
   // Memoize color and height expressions
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const colorExpression = useMemo((): any => [
-    'interpolate',
-    ['linear'],
-    ['coalesce', ['get', 'trips'], 0],
-    0, '#FFEDA0',
-    100, '#FED976',
-    500, '#FEB24C',
-    1000, '#FD8D3C',
-    2000, '#FC4E2A',
-    5000, '#E31A1C',
-    10000, '#BD0026',
-    20000, '#800026'
-  ], []);
+  const colorExpression = useMemo(
+    (): any => [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "trips"], 0],
+      0,
+      "#FFEDA0",
+      100,
+      "#FED976",
+      500,
+      "#FEB24C",
+      1000,
+      "#FD8D3C",
+      2000,
+      "#FC4E2A",
+      5000,
+      "#E31A1C",
+      10000,
+      "#BD0026",
+      20000,
+      "#800026",
+    ],
+
+    [],
+  );
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const heightExpression = useMemo((): any => [
-    'interpolate',
-    ['linear'],
-    ['coalesce', ['get', 'trips'], 0],
-    0, 0,
-    100, 50,
-    500, 100,
-    1000, 200,
-    2000, 300,
-    5000, 400,
-    10000, 500,
-    20000, 600
-  ], []);
+  const heightExpression = useMemo(
+    (): any => [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "trips"], 0],
+      0,
+      0,
+      100,
+      50,
+      500,
+      100,
+      1000,
+      200,
+      2000,
+      300,
+      5000,
+      400,
+      10000,
+      500,
+      20000,
+      600,
+    ],
+
+    [],
+  );
 
   const formatHour = (hour: number): string => {
-    if (hour === 0) return '12 AM';
-    if (hour === 12) return '12 PM';
+    if (hour === 0) return "12 AM";
+    if (hour === 12) return "12 PM";
     return hour > 12 ? `${hour - 12} PM` : `${hour} AM`;
   };
 
@@ -104,12 +140,12 @@ export default function MapView() {
   useEffect(() => {
     async function loadZones() {
       try {
-        const response = await fetch('/taxi_zones.geojson');
+        const response = await fetch("/taxi_zones.geojson");
         if (!response.ok) {
           throw new Error(`Failed to load taxi zones: ${response.statusText}`);
         }
         const text = await response.text();
-        
+
         let data;
         try {
           data = JSON.parse(text);
@@ -118,29 +154,42 @@ export default function MapView() {
           throw new Error("Invalid JSON format in taxi zones file");
         }
 
-        if (!data || data.type !== "FeatureCollection" || !Array.isArray(data.features)) {
+        if (
+          !data ||
+          data.type !== "FeatureCollection" ||
+          !Array.isArray(data.features)
+        ) {
           throw new Error("Invalid GeoJSON data");
         }
 
         const transformed = {
           ...data,
           features: data.features.map((feature: unknown) => {
-            const typedFeature = feature as Feature<Polygon | MultiPolygon, { location_id: string; zone: string; borough: string }>;
-            const locationId = parseInt(typedFeature.properties.location_id, 10);
+            const typedFeature = feature as Feature<
+              Polygon | MultiPolygon,
+              { location_id: string; zone: string; borough: string }
+            >;
+
+            const locationId = parseInt(
+              typedFeature.properties.location_id,
+              10,
+            );
             if (isNaN(locationId)) {
-              throw new Error(`Invalid location_id "${typedFeature.properties.location_id}" in zone "${typedFeature.properties.zone}"`);
+              throw new Error(
+                `Invalid location_id "${typedFeature.properties.location_id}" in zone "${typedFeature.properties.zone}"`,
+              );
             }
             return {
               ...typedFeature,
               properties: {
                 ...typedFeature.properties,
                 LocationID: locationId.toString(),
-                location_id: typedFeature.properties.location_id
-              }
+                location_id: typedFeature.properties.location_id,
+              },
             };
-          })
+          }),
         };
-        console.log('Sample zone feature:', transformed.features[0]);
+        console.log("Sample zone feature:", transformed.features[0]);
         setRawZonesData(transformed as ZoneFeatureCollection);
       } catch (err) {
         console.error("Error loading taxi zones:", err);
@@ -158,35 +207,38 @@ export default function MapView() {
     fetchDemand(hour)
       .then((rows: DemandRow[]) => {
         const m: Record<number, number> = {};
-        rows.forEach(r => {
+        rows.forEach((r) => {
           m[r.PULocationID] = r.n_trips;
         });
-        console.log('Updated counts:', m); // Debug log
+        console.log("Updated counts:", m); // Debug log
         setCounts(m);
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Error fetching demand data:", err);
         setError("Failed to load demand data. Please try again later.");
       });
   }, [hour, rawZonesData]);
 
-  const handleZoneClick = useCallback((event: MapLayerMouseEvent) => {
-    if (!event.features || event.features.length === 0) return;
-    const feature = event.features[0] as unknown as ZoneFeature;
-    const locationId = parseInt(feature.properties.LocationID, 10);
-    const trips = counts[locationId] || 0;
+  const handleZoneClick = useCallback(
+    (event: MapLayerMouseEvent) => {
+      if (!event.features || event.features.length === 0) return;
+      const feature = event.features[0] as unknown as ZoneFeature;
+      const locationId = parseInt(feature.properties.LocationID, 10);
+      const trips = counts[locationId] || 0;
 
-    // Set selected zone info
-    setSelectedZone({
-      longitude: event.lngLat.lng,
-      latitude: event.lngLat.lat,
-      zone: feature.properties.zone,
-      borough: feature.properties.borough,
-      trips,
-      avgTip: null,
-      locationId
-    });
-  }, [counts]);
+      // Set selected zone info
+      setSelectedZone({
+        longitude: event.lngLat.lng,
+        latitude: event.lngLat.lat,
+        zone: feature.properties.zone,
+        borough: feature.properties.borough,
+        trips,
+        avgTip: null,
+        locationId,
+      });
+    },
+    [counts],
+  );
 
   // Add view state change optimization
   const handleViewStateChange = useCallback((evt: ViewStateChangeEvent) => {
@@ -199,21 +251,31 @@ export default function MapView() {
   }
 
   return (
-    <div style={{ position: 'relative', height: '100vh', display: 'flex', background: '#1a1a1a', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0 }}>
+    <div
+      style={{
+        position: "relative",
+        height: "100vh",
+        display: "flex",
+        background: "#1a1a1a",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ position: "absolute", inset: 0 }}>
         {error && (
-          <div style={{
-            position: 'absolute',
-            top: '10px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1000,
-            background: 'rgba(255, 0, 0, 0.2)',
-            padding: '10px',
-            borderRadius: '5px',
-            border: '1px solid rgba(255, 0, 0, 0.3)',
-            color: '#ff6b6b'
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              top: "10px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              zIndex: 1000,
+              background: "rgba(255, 0, 0, 0.2)",
+              padding: "10px",
+              borderRadius: "5px",
+              border: "1px solid rgba(255, 0, 0, 0.3)",
+              color: "#ff6b6b",
+            }}
+          >
             {error}
           </div>
         )}
@@ -221,21 +283,24 @@ export default function MapView() {
           {...viewState}
           onMove={handleViewStateChange}
           mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-          style={{ width: '100%', height: '100%' }}
+          style={{ width: "100%", height: "100%" }}
           onClick={handleZoneClick}
-          interactiveLayerIds={viewState.pitch > 0 ? ['zones-extrusion'] : ['zones']}
+          interactiveLayerIds={
+            viewState.pitch > 0 ? ["zones-extrusion"] : ["zones"]
+          }
           maxZoom={16}
         >
-          <NavigationControl 
-            position="bottom-left" 
+          <NavigationControl
+            position="bottom-left"
             showCompass={true}
             showZoom={true}
             visualizePitch={true}
             style={{
-              marginLeft: '12px',
-              marginBottom: '12px',
+              marginLeft: "12px",
+              marginBottom: "12px",
             }}
           />
+
           <style>
             {`
               .maplibregl-ctrl-group {
@@ -264,8 +329,8 @@ export default function MapView() {
               }
             `}
           </style>
-          <Source 
-            type="geojson" 
+          <Source
+            type="geojson"
             data={enhancedZonesData}
             generateId={true}
             buffer={0}
@@ -277,9 +342,9 @@ export default function MapView() {
                 id="zones"
                 type="fill"
                 paint={{
-                  'fill-color': colorExpression,
-                  'fill-opacity': 0.7,
-                  'fill-outline-color': '#000'
+                  "fill-color": colorExpression,
+                  "fill-opacity": 0.7,
+                  "fill-outline-color": "#000",
                 }}
               />
             ) : (
@@ -287,11 +352,11 @@ export default function MapView() {
                 id="zones-extrusion"
                 type="fill-extrusion"
                 paint={{
-                  'fill-extrusion-color': colorExpression,
-                  'fill-extrusion-height': heightExpression,
-                  'fill-extrusion-base': 0,
-                  'fill-extrusion-opacity': 0.7,
-                  'fill-extrusion-vertical-gradient': true
+                  "fill-extrusion-color": colorExpression,
+                  "fill-extrusion-height": heightExpression,
+                  "fill-extrusion-base": 0,
+                  "fill-extrusion-opacity": 0.7,
+                  "fill-extrusion-vertical-gradient": true,
                 }}
               />
             )}
@@ -302,8 +367,8 @@ export default function MapView() {
         <h2 className="text-2xl font-bold mb-6">NYC Taxi Insights 2024</h2>
         <AnalyticsPanel
           zoneId={selectedZone?.locationId ?? null}
-          zoneName={selectedZone?.zone || ''}
-          borough={selectedZone?.borough || ''}
+          zoneName={selectedZone?.zone || ""}
+          borough={selectedZone?.borough || ""}
           hour={hour}
         />
       </div>
@@ -321,28 +386,36 @@ export default function MapView() {
         <div className="hidden group-hover:flex group-focus-within:flex flex-col gap-4 bg-card border border-border rounded-xl shadow-xl p-6 min-w-[260px] transition">
           <div className="flex items-center gap-4">
             <span className="text-muted-foreground font-medium">Hour:</span>
-            <span className="text-foreground font-bold text-lg w-16 text-center">{formatHour(hour)}</span>
+            <span className="text-foreground font-bold text-lg w-16 text-center">
+              {formatHour(hour)}
+            </span>
           </div>
           <input
             type="range"
             min={0}
             max={23}
             value={hour}
-            onChange={e => setHour(+e.target.value)}
+            onChange={(e) => setHour(+e.target.value)}
             className="w-40 h-2 accent-primary bg-muted rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
             style={{
-              WebkitAppearance: 'none',
-              appearance: 'none',
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           />
+
           <button
-            onClick={() => setViewState(prev => ({ ...prev, pitch: prev.pitch === 0 ? 45 : 0 }))}
+            onClick={() =>
+              setViewState((prev) => ({
+                ...prev,
+                pitch: prev.pitch === 0 ? 45 : 0,
+              }))
+            }
             className="bg-muted text-foreground border border-border rounded-lg px-6 py-2 shadow transition hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-w-[120px] font-medium text-base"
           >
-            {viewState.pitch === 0 ? 'Show 3D View' : 'Show 2D View'}
+            {viewState.pitch === 0 ? "Show 3D View" : "Show 2D View"}
           </button>
         </div>
       </div>
     </div>
   );
-} 
+}
