@@ -1,6 +1,6 @@
 # NYC Taxi Explorer
 
-A web application for exploring NYC taxi data, featuring an interactive map visualization of demand patterns and fare anomalies.
+A web application for exploring NYC taxi data, featuring an interactive map visualization of demand patterns and fare anomalies. [Cleaned data and Spark ETL for cleaning and pushing to mySQL](https://github.com/colinthekkinedath/nyctaxidatapipeline)
 
 ![Screenshot](screenshot.jpeg)
 
